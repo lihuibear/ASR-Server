@@ -1,3 +1,0 @@
-jieba
-funasr-onnx==0.2.4
-pytorch
