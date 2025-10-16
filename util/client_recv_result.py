@@ -12,6 +12,9 @@ from util.client_strip_punc import strip_punc
 from util.client_write_md import write_md
 from util.client_type_result import type_result
 
+# 自定义函数
+from myutils.mysql_utils import save_to_mysql
+
 
 async def recv_result():
     if not await check_websocket():
@@ -48,6 +51,11 @@ async def recv_result():
             # 控制台输出
             console.print(f'    转录时延：{delay:.2f}s')
             console.print(f'    识别结果：[green]{text}')
+            # todo  这里改造 存到数据库
+            save_to_mysql(text)
+
+
+
             console.line()
 
     except websockets.ConnectionClosedError:
