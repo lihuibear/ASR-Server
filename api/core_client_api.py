@@ -120,25 +120,69 @@ async def get_mic_status():
 
 
 async def process_file_task(file_path: str, task_id: str):
-    """处理文件转录的后台任务"""
+    """处理文件转录的后台任务（稳定版）"""
+    from util.client_cosmic import Cosmic
+
     try:
         app.state.transcription_tasks[task_id] = "processing"
         file = Path(file_path)
 
-        if file.suffix in ['.txt', '.json', '.srt']:
+        # ✅ 打印调试信息
+        console.print(f"[调试] 任务 {task_id} 开始处理文件: {file.resolve()}", style="cyan")
+
+        # ✅ 检查文件是否存在
+        if not file.exists():
+            console.print(f"[错误] 文件不存在: {file}", style="red")
+            app.state.transcription_tasks[task_id] = "error: 文件不存在"
+            return
+
+        # ✅ 初始化 Cosmic 环境（让 transcribe 可用）
+        Cosmic.loop = asyncio.get_event_loop()
+        Cosmic.queue_in = asyncio.Queue()
+        Cosmic.queue_out = asyncio.Queue()
+
+        # ✅ 更新热词（可选）
+        try:
+            update_hot_all()
+            observer = observe_hot()
+        except Exception as e:
+            console.print(f"[警告] 热词更新失败: {e}", style="yellow")
+
+        # ✅ Windows 性能优化
+        if system() == "Windows":
+            try:
+                empty_current_working_set()
+            except Exception:
+                pass
+
+        # ✅ 开始处理
+        if file.suffix.lower() in [".txt", ".json", ".srt"]:
+            console.print(f"[提示] 调整字幕文件: {file.name}", style="magenta")
             adjust_srt(file)
         else:
+            console.print(f"[提示] 开始转录音频/视频文件: {file.name}", style="magenta")
             await transcribe(file)
 
         app.state.transcription_tasks[task_id] = "completed"
+        console.print(f"[完成] 任务 {task_id} 转录完成", style="green")
+
+    except FileNotFoundError as e:
+        console.print(f"[错误] 文件未找到: {e}", style="red")
+        app.state.transcription_tasks[task_id] = f"error: {str(e)}"
 
     except Exception as e:
-        console.print(f"文件处理出错: {str(e)}", style="red")
+        # 捕获所有异常
+        console.print(f"[异常] 文件处理出错: {str(e)}", style="red")
         app.state.transcription_tasks[task_id] = f"error: {str(e)}"
+
     finally:
-        # 清理临时文件
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        # ✅ 安全清理临时文件
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                console.print(f"[清理] 临时文件已删除: {file_path}", style="dim")
+        except Exception as e:
+            console.print(f"[警告] 删除临时文件失败: {e}", style="yellow")
 
 
 @app.post("/transcribe-file", response_model=Dict[str, str])
@@ -149,20 +193,22 @@ async def transcribe_file(
     """上传文件并进行转录"""
     import uuid
 
-    # 生成唯一任务ID
     task_id = str(uuid.uuid4())
 
-    # 保存上传的文件到临时位置
     try:
         temp_dir = os.path.join(BASE_DIR, "temp_uploads")
         os.makedirs(temp_dir, exist_ok=True)
-        file_path = os.path.join(temp_dir, f"{task_id}_{file.filename}")
+        safe_name = Path(file.filename).name.replace(" ", "_")  # 防止空格或特殊字符
+        file_path = os.path.join(temp_dir, f"{task_id}_{safe_name}")
 
         async with aiofiles.open(file_path, 'wb') as out_file:
             content = await file.read()
             await out_file.write(content)
 
-        # 将文件处理添加到后台任务
+        # ✅ 关闭 UploadFile，释放资源
+        await file.close()
+
+        # 注册后台任务
         app.state.transcription_tasks[task_id] = "pending"
         background_tasks.add_task(process_file_task, file_path, task_id)
 

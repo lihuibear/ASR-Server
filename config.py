@@ -20,7 +20,7 @@ class ClientConfig:
     paste        = True         # 是否以写入剪切板然后模拟 Ctrl-V 粘贴的方式输出结果
     restore_clip = True         # 模拟粘贴后是否恢复剪贴板
 
-    save_audio = True           # 是否保存录音文件
+    save_audio = False           # 是否保存录音文件
     audio_name_len = 20         # 将录音识别结果的前多少个字存储到录音文件名中，建议不要超过200
 
     trash_punc = '，。,.'        # 识别结果要消除的末尾标点

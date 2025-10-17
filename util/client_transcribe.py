@@ -20,7 +20,8 @@ from util.client_cosmic import console, Cosmic
 from util.client_check_websocket import check_websocket
 from config import ClientConfig as Config
 
-
+# 自定义函数
+from myutils.mysql_utils import save_to_mysql
 async def transcribe(file: Path):
 
     # 检查连接
@@ -79,6 +80,9 @@ async def transcribe(file: Path):
     text_split = re.sub('[，。？]', '\n', text_merge)
     timestamps = message['timestamps']
     tokens = message['tokens']
+
+    # 存储结果
+    save_to_mysql(text_merge)
 
     # 得到文件名
     json_filename = Path(file).with_suffix(".json")
