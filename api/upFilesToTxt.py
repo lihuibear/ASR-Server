@@ -98,7 +98,7 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "upFiles:app",   # 模块名:应用对象
+        "upFilesToTxt:app",   # 模块名:应用对象
         host="0.0.0.0",          # 允许外部访问
         port=8000,               # 指定端口
         reload=True,             # 开发模式自动重载
