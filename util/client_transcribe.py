@@ -21,7 +21,7 @@ from util.client_check_websocket import check_websocket
 from config import ClientConfig as Config
 
 # 自定义函数
-from myutils.mysql_utils import save_to_mysql
+from myutils.addMysql import save_to_mysql
 async def transcribe(file: Path):
 
     # 检查连接

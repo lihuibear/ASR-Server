@@ -13,7 +13,7 @@ from util.client_write_md import write_md
 from util.client_type_result import type_result
 
 # 自定义函数
-from myutils.mysql_utils import save_to_mysql
+from myutils.addMysql import save_to_mysql
 
 
 async def recv_result():
